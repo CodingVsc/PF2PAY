@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}
+ИГРА
+{% endblock %}
+{% block content %}
+<div id="game-list">
+    <div class="flex">
+        {% for game in games %}
+        <div class="flex">
+            <p class="flex">{{ game.game_name }}</p>
+            <ul>
+                <li><a class="product-link" href="{% url 'product:game' game.id %}">Перейти к продукту</a></li>
+            </ul>
+        </div>
+        {% empty %}
+        <div>No games available.
+            <button hx-get="{% url 'home' %}" hx-target="#game-list">Refresh</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
