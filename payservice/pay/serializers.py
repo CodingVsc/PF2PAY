@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import UserAccount, Balance, Transaction
+from .models import UserAccount, Balance, Transaction, TransferHistory
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,4 +23,10 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = ('operation_type', 'acc_from', 'acc_to', 'product_id')
 
+
+class TransferSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TransferHistory
+        fields = ('sum', 'acc_from', 'acc_to', 'created_at')
 

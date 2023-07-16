@@ -4,7 +4,8 @@ from rest_framework.response import Response
 
 import requests
 
-from .serializers import UserSerializer, BalanceSerializer, TransactionSerializer
+from .serializers import (UserSerializer, BalanceSerializer,
+                          TransactionSerializer, TransferSerializer)
 from .models import UserAccount, Transaction, TransferHistory
 
 
@@ -53,21 +54,32 @@ class TransactionCreateApiView(generics.CreateAPIView):
             product_dict = product_data.json()
             price = product_dict.get('price')
 
-            # Создание записи в TransferHistory
-            TransferHistory.objects.create(acc_from=acc_from, acc_to=acc_to, sum=price)
-
-            # Дальнейшая логика(меняем is_active для скрытия продукта с ленты)
+            # Дальнейшая логика (меняем is_active для скрытия продукта с ленты)
             Transaction.objects.filter(id=transaction_id).update(is_accepted=True)
             data = {'is_active': False}
             requests.patch(f'http://127.0.0.1:8000/api/v1/product-detail/{product_id}/', data)
 
-            # Осуществляем действия с балансом
-            UserAccount.objects.filter(id=acc_from).update(balance=F('balance') - price)
-            UserAccount.objects.filter(id=acc_to).update(balance=F('balance') + price)
+            # Проверка баланса и вычет средств
+            acc_from_obj = UserAccount.objects.get(id=acc_from)
+            if acc_from_obj.balance >= price:
+                UserAccount.objects.filter(id=acc_from).update(balance=F('balance') - price)
+                UserAccount.objects.filter(id=acc_to).update(balance=F('balance') + price)
+                TransferHistory.objects.create(acc_from=acc_from, acc_to=acc_to, sum=price)
+            else:
+                Response({'error': 'Failed to create transaction, your balance less than price'})
         else:
-            # Обработка случая, когда запрос к эндпоинту product-detail не успешен
-            # возможно добавить доп логику
-            pass
+            return Response({'error': 'Failed to create transaction'})
+
+
+class TransferListApiView(generics.ListAPIView):
+    serializer_class = TransferSerializer
+
+    def get_queryset(self):
+        acc_id = self.kwargs['pk']
+        user_obj_1 = UserAccount.objects.filter(acc_from=acc_id)
+        user_obj_2 = UserAccount.objects.filter(acc_to=acc_id)
+        combined_queryset = user_obj_1 | user_obj_2
+        return combined_queryset
 
 
 
