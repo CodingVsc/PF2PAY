@@ -4,11 +4,14 @@ from django.http import JsonResponse
 
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+
+import os
 
 from .classes import ListCreateUpdateDestroyDS
 from .models import User, Reviews
-from .permissions import IsUser
+from .permissions import IsUser, IsReviewAuthor
 from .serializers import (UserSerializer, SignupSerializer,
                           UserUpdateSerializer, ChangePasswordSerializer,
                           ReviewSerializer)
@@ -36,7 +39,8 @@ class SignUpApiView(generics.CreateAPIView):
         data = {
             'user_id': user_id,
         }
-        response = requests.post('http://127.0.0.1:6000/api/v2/create-account/', data=data)
+        create_account_url = os.environ.get('CREATE_ACCOUNT_API_URL')
+        response = requests.post(create_account_url, data=data)
 
         if response.status_code != 200:
             return Response({'error': 'Failed to create account'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -47,10 +51,12 @@ class SignUpApiView(generics.CreateAPIView):
 class EditProfileApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsUser]
     serializer_class = UserUpdateSerializer
+    queryset = User.objects.all()
 
     def get_object(self):
-        user_id = self.kwargs['pk']
-        return User.objects.get(pk=user_id)
+        obj = get_object_or_404(self.queryset, pk=self.kwargs["pk"])
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def perform_update(self, serializer):
         if 'file' in self.request.data:
@@ -67,6 +73,7 @@ class ChangePasswordApiView(generics.UpdateAPIView):
 
     def get_object(self, queryset=None):
         obj = self.request.user
+        self.check_object_permissions(self.request, obj)
         return obj
 
     def update(self, request, *args, **kwargs):
@@ -99,8 +106,8 @@ class ProfileDetailApiView(generics.RetrieveAPIView):
 class ReviewsEntryGroup(ListCreateUpdateDestroyDS):
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
-    permission_classes_by_action = {'update': [],
-                                    'destroy': []}
+    permission_classes_by_action = {'update': [IsReviewAuthor],
+                                    'destroy': [IsReviewAuthor]}
 
     def get_queryset(self):
         profile_id = self.kwargs['pk']

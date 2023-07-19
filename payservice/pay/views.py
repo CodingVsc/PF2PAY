@@ -2,11 +2,10 @@ from django.db.models import F
 from rest_framework import generics
 from rest_framework.response import Response
 
-import requests
-
 from .serializers import (UserSerializer, BalanceSerializer,
                           TransactionSerializer, TransferSerializer)
-from .models import UserAccount, Transaction, TransferHistory
+from .models import UserAccount
+from .service import transaction_logic
 
 
 class UserCreateApiView(generics.CreateAPIView):
@@ -48,27 +47,7 @@ class TransactionCreateApiView(generics.CreateAPIView):
         acc_from = serializer.instance.acc_from
         acc_to = serializer.instance.acc_to
 
-        product_data = requests.get(f'http://127.0.0.1:8000/api/v1/product-detail/{product_id}/')
-
-        if product_data.status_code == 200:
-            product_dict = product_data.json()
-            price = product_dict.get('price')
-
-            # Дальнейшая логика (меняем is_active для скрытия продукта с ленты)
-            Transaction.objects.filter(id=transaction_id).update(is_accepted=True)
-            data = {'is_active': False}
-            requests.patch(f'http://127.0.0.1:8000/api/v1/product-detail/{product_id}/', data)
-
-            # Проверка баланса и вычет средств
-            acc_from_obj = UserAccount.objects.get(id=acc_from)
-            if acc_from_obj.balance >= price:
-                UserAccount.objects.filter(id=acc_from).update(balance=F('balance') - price)
-                UserAccount.objects.filter(id=acc_to).update(balance=F('balance') + price)
-                TransferHistory.objects.create(acc_from=acc_from, acc_to=acc_to, sum=price)
-            else:
-                Response({'error': 'Failed to create transaction, your balance less than price'})
-        else:
-            return Response({'error': 'Failed to create transaction'})
+        transaction_logic(product_id, transaction_id, acc_from, acc_to)
 
 
 class TransferListApiView(generics.ListAPIView):
