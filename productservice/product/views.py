@@ -34,8 +34,8 @@ class ListProductApiView(generics.ListAPIView):
 
 class ProductDetailEntryGroupView(RetrieveUpdateDestroyDS):
     permission_classes = [permissions.AllowAny]
-    permission_classes_by_actions = {'update': [permissions.IsAdminUser, IsAuthor],
-                                     'destroy': [permissions.IsAdminUser, IsAuthor]}
+    permission_classes_by_actions = {'update': [IsAuthor],
+                                     'destroy': [IsAuthor]}
 
     queryset = ProductBase.objects.all()
     serializer_class = ProductSerializer

@@ -1,10 +1,10 @@
-from django.db.models import F
-from rest_framework import generics
+from django.db.models import F, Q
+from rest_framework import generics, status
 from rest_framework.response import Response
 
 from .serializers import (UserSerializer, BalanceSerializer,
                           TransactionSerializer, TransferSerializer)
-from .models import UserAccount
+from .models import UserAccount, TransferHistory
 from .service import transaction_logic
 
 
@@ -34,7 +34,7 @@ class BalanceWithdrawalApiView(generics.CreateAPIView):
         if amount <= balance:
             UserAccount.objects.filter(id=acc_id).update(balance=F('balance') - amount)
         else:
-            return Response({'error': 'Failed to create transaction'})
+            return Response({'error': 'Failed to create transaction'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TransactionCreateApiView(generics.CreateAPIView):
@@ -47,7 +47,14 @@ class TransactionCreateApiView(generics.CreateAPIView):
         acc_from = serializer.instance.acc_from
         acc_to = serializer.instance.acc_to
 
-        transaction_logic(product_id, transaction_id, acc_from, acc_to)
+        result = transaction_logic(product_id, transaction_id, acc_from, acc_to)
+
+        if 'success' in result:
+            return Response({'status': 'Transaction created successfully'})
+        elif 'error' in result:
+            return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': 'Failed to create transaction'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TransferListApiView(generics.ListAPIView):
@@ -55,10 +62,8 @@ class TransferListApiView(generics.ListAPIView):
 
     def get_queryset(self):
         acc_id = self.kwargs['pk']
-        user_obj_1 = UserAccount.objects.filter(acc_from=acc_id)
-        user_obj_2 = UserAccount.objects.filter(acc_to=acc_id)
-        combined_queryset = user_obj_1 | user_obj_2
-        return combined_queryset
+        queryset = TransferHistory.objects.filter(Q(acc_from=acc_id) | Q(acc_to=acc_id))
+        return queryset
 
 
 

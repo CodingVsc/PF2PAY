@@ -4,9 +4,7 @@ from django.db.models import F
 
 import os
 
-from rest_framework.response import Response
-
-from payservice.pay.models import Transaction, UserAccount, TransferHistory
+from .models import Transaction, UserAccount, TransferHistory
 
 
 def transaction_logic(product_id, transaction_id, acc_from, acc_to):
@@ -30,7 +28,8 @@ def transaction_logic(product_id, transaction_id, acc_from, acc_to):
             UserAccount.objects.filter(id=acc_from).update(balance=F('balance') - price)
             UserAccount.objects.filter(id=acc_to).update(balance=F('balance') + price)
             TransferHistory.objects.create(acc_from=acc_from, acc_to=acc_to, sum=price)
+            return {'success': True}
         else:
-            Response({'error': 'Failed to create transaction, your balance less than price'})
+            return {'error': 'Failed to create transaction, your balance less than price'}
     else:
-        return Response({'error': 'Failed to create transaction'})
+        return {'error': 'Failed to create transaction'}
