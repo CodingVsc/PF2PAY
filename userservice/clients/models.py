@@ -18,7 +18,6 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=50)
 
     is_seller = models.BooleanField(default=False)
-    balance = models.FloatField(default=0)
     phone = models.CharField(max_length=30)
 
     product_count = models.IntegerField(default=0)

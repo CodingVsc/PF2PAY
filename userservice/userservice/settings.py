@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*^%*iak!o2c&=-qybztw0!p@5mi!%11dr3!hfl0xc2j)^h@#+n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'clients.User'
 
@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'clients',
     'rest_framework',
-    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -104,7 +103,7 @@ DATABASES = {
         'NAME': 'user_service',
         'USER': 'postgres',
         'PASSWORD': '1337',
-        'HOST': 'localhost',
+        'HOST': 'user_db',
         'PORT': '5432',
     }
 }

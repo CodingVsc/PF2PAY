@@ -1,0 +1,73 @@
+version: '3'
+services:
+  productservice:
+    build:
+      context: ./productservice
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=product_db
+      - DB_NAME=productservice
+      - DB_USER=postgres
+      - DB_PASS=1337
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - product_db
+
+  userservice:
+    build:
+      context: ./userservice
+    ports:
+      - "7000:7000"
+    environment:
+      - DB_HOST=user_db
+      - DB_NAME=user_service
+      - DB_USER=postgres
+      - DB_PASS=1337
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:7000"
+    depends_on:
+      - user_db
+
+  payservice:
+    build:
+      context: ./payservice
+    ports:
+      - "6000:6000"
+    environment:
+      - DB_HOST=pay_db
+      - DB_NAME=payservice
+      - DB_USER=postgres
+      - DB_PASS=1337
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:6000"
+    depends_on:
+      - pay_db
+
+  product_db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: productservice
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1337
+
+  user_db:
+    image: postgres:latest
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: user_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1337
+
+  pay_db:
+    image: postgres:latest
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: payservice
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1337
